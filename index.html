@@ -1,5 +1,22 @@
-// This is the functional "Bridge" method that worked for you before
-const systemPrompt = `You are the master mechanics server backend for Rivera Boii's Garage. Analyze vehicle repair queries and output EXACT structured mechanical repair telemetry.
+async function calculateJob() {
+    const apiKey = document.getElementById('apiKey').value.trim();
+    const year = document.getElementById('vehicleYear').value;
+    const make = document.getElementById('vehicleMake').value;
+    const model = document.getElementById('vehicleModel').value;
+    const rawJob = document.getElementById('jobInput').value.trim();
+
+    if(!apiKey || !year || !make || !model || !rawJob) {
+        alert("Please complete all dropdown vehicle settings and repair specs!");
+        return;
+    }
+
+    const compiledJob = `${year} ${make} ${model} ${rawJob}`;
+    localStorage.setItem('rivera_garage_key', apiKey);
+
+    document.getElementById('loading').style.display = 'block';
+    document.getElementById('output').style.display = 'none';
+
+    const systemPrompt = `You are the master mechanics server backend for Rivera Boii's Garage. Analyze vehicle repair queries and output EXACT structured mechanical repair telemetry.
 
 CRITICAL INSTRUCTIONS:
 1. Always address the shop owner as "Mr. Rivera" at the start of REQUIRED_TOOLS and TRAPS_AND_TRICKS sections.
@@ -10,25 +27,59 @@ BOOK_HOURS: [Numeric hours value, e.g., 2.5]
 REQUIRED_TOOLS: [Note addressing Mr. Rivera regarding essential tools needed]
 TRAPS_AND_TRICKS: [Warning addressing Mr. Rivera about safety details or hidden bolts]`;
 
-// This specific URL is the "Bridge" that makes it work
-const targetUrl = 'https://cors-anywhere.herokuapp.com/https://api.groq.com/openai/v1/chat/completions';
+    const targetUrl = 'https://cors-anywhere.herokuapp.com/https://api.groq.com/openai/v1/chat/completions';
 
-try {
-    const response = await fetch(targetUrl, {
-        method: 'POST',
-        headers: {
-            'Authorization': `Bearer ${apiKey}`,
-            'Content-Type': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest'
-        },
-        body: JSON.stringify({
-            model: "llama3-8b-8192",
-            messages: [
-                { role: "system", content: systemPrompt },
-                { role: "user", content: `Analyze this repair job: ${compiledJob}` }
-            ],
-            temperature: 0.2
-        })
-    });
-    
-    // ... rest of your parsing logic
+    try {
+        const response = await fetch(targetUrl, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${apiKey}`,
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({
+                model: "llama3-8b-8192",
+                messages: [
+                    { role: "system", content: systemPrompt },
+                    { role: "user", content: `Analyze this repair job: ${compiledJob}` }
+                ],
+                temperature: 0.2
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error("API Authentication Rejected. Verify your Groq Key string.");
+        }
+
+        const data = await response.json();
+        const aiText = data.choices[0].message.content;
+        
+        const hoursMatch = aiText.match(/BOOK_HOURS:\s*([\d.]+)/);
+        const toolsMatch = aiText.match(/REQUIRED_TOOLS:\s*([\s\S]*?)(?=TRAPS_AND_TRICKS:|$)/);
+        const trapsMatch = aiText.match(/TRAPS_AND_TRICKS:\s*([\s\S]*?)$/);
+
+        const hours = hoursMatch ? parseFloat(hoursMatch[1]) : 2.5;
+        const tools = toolsMatch ? toolsMatch[1].trim() : "Mr. Rivera, standard workshop diagnostic hand tools are required.";
+        const traps = trapsMatch ? trapsMatch[1].trim() : "Mr. Rivera, ensure clear clearances and component inspection safety.";
+
+        const rate = 45;
+        const cap = 250;
+        let computedLabor = hours * rate;
+        if(computedLabor > cap) computedLabor = cap;
+
+        document.getElementById('pricingBlock').innerHTML = `Book Time: <span>${hours} Hrs</span> &nbsp;|&nbsp; Labor Cost: <span>$${computedLabor.toFixed(2)}</span>`;
+        document.getElementById('toolsContent').innerHTML = `<p>${tools}</p>`;
+        document.getElementById('trapsContent').innerHTML = `<p>${traps}</p>`;
+
+        const smsTemplate = `Rivera Boii's Garage Quote:\n--------------------------------\nVehicle/Job: ${compiledJob}\nLabor Total: $${computedLabor.toFixed(2)}\n--------------------------------\nEstimated Out-The-Door Total: $${computedLabor.toFixed(2)}\n\nPlease let me know if you want to lock in your driveway appointment slot!`;
+
+        document.getElementById('quoteText').innerText = smsTemplate;
+        document.getElementById('output').style.display = 'block';
+
+    } catch (error) {
+        console.error(error);
+        alert("System Communication Check:\n" + error.message);
+    } finally {
+        document.getElementById('loading').style.display = 'none';
+    }
+}
