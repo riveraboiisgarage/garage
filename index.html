@@ -1,71 +1,45 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rivera Boii's Garage</title>
-    <style>
-        :root { --bg-color: #121212; --card-bg: #1e1e1e; --accent-color: #3b82f6; --text-main: #ffffff; --text-muted: #a0aec0; --border-color: #2d3748; }
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; }
-        body { background-color: var(--bg-color); color: var(--text-main); padding: 20px; display: flex; justify-content: center; }
-        .container { width: 100%; max-width: 600px; background: var(--card-bg); padding: 24px; border-radius: 12px; }
-        select, input { width: 100%; background: #2d3748; border: 1px solid var(--border-color); color: white; padding: 12px; margin-bottom: 12px; border-radius: 6px; }
-        button { width: 100%; background: var(--accent-color); color: white; border: none; padding: 14px; border-radius: 6px; font-weight: bold; cursor: pointer; }
-    </style>
-</head>
-<body>
+async function calculateJob() {
+    const apiKey = document.getElementById('apiKey').value.trim();
+    const make = document.getElementById('vehicleMake').value;
+    const model = document.getElementById('vehicleModel').value;
+    const job = document.getElementById('jobInput').value.trim();
 
-<div class="container">
-    <h1>Rivera Boii's Garage</h1>
-    <label>Groq API Key</label>
-    <input type="text" id="apiKey" placeholder="gsk_...">
-
-    <label>Vehicle Configuration</label>
-    <select id="vehicleMake">
-        <option value="">Select Make</option>
-        <option value="Chevy">Chevy</option>
-        <option value="Jeep">Jeep</option>
-        <option value="Ford">Ford</option>
-        <option value="GMC">GMC</option>
-    </select>
-
-    <select id="vehicleModel">
-        <option value="">Select Model</option>
-    </select>
-
-    <input type="text" id="jobInput" placeholder="Describe the repair...">
-    <button onclick="calculateJob()">Compute Quote</button>
-</div>
-
-<script>
-    // The "Smart Menu" Data
-    const vehicleData = {
-      "Chevy": ["Tahoe", "Silverado", "Malibu", "Equinox"],
-      "Jeep": ["Grand Cherokee", "Wrangler", "Cherokee", "Compass"],
-      "Ford": ["Explorer", "F-150", "Mustang", "Escape"],
-      "GMC": ["Sierra", "Yukon", "Terrain", "Acadia"]
-    };
-
-    // Logic to make the Model dropdown react to the Make dropdown
-    document.getElementById('vehicleMake').addEventListener('change', function() {
-        const make = this.value;
-        const modelDropdown = document.getElementById('vehicleModel');
-        modelDropdown.innerHTML = '<option value="">Select Model</option>';
-        
-        if (make && vehicleData[make]) {
-            vehicleData[make].forEach(model => {
-                const opt = document.createElement('option');
-                opt.value = model;
-                opt.textContent = model;
-                modelDropdown.appendChild(opt);
-            });
-        }
-    });
-
-    function calculateJob() {
-        // Your existing analysis logic goes here...
-        console.log("Ready to compute!");
+    if (!apiKey || !make || !model || !job) {
+        alert("Please fill in all fields!");
+        return;
     }
-</script>
-</body>
-</html>
+
+    console.log("Attempting to connect to Groq..."); // Check this in your browser console!
+
+    try {
+        const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${apiKey}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                model: "llama3-8b-8192",
+                messages: [
+                    { role: "system", content: "You are a mechanic estimator. Output: BOOK_HOURS: X, REQUIRED_TOOLS: Y, TRAPS_AND_TRICKS: Z" },
+                    { role: "user", content: `Quote: ${make} ${model} ${job}` }
+                ]
+            })
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error("Groq Error:", errorText);
+            alert("Connection failed. Check your browser console (Right click -> Inspect -> Console).");
+            return;
+        }
+
+        const data = await response.json();
+        console.log("Success:", data);
+        // Add your display logic here
+        
+    } catch (err) {
+        console.error("Fetch Error:", err);
+        alert("Check your internet or API key. Error: " + err.message);
+    }
+}
