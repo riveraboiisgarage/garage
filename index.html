@@ -587,18 +587,17 @@
         setBusy(true);
         resultsCard.style.display = "none";
 
-        const systemPrompt = [
-            const systemPrompt = [
-  "You are an experienced automotive repair estimator.",
-  "Address the user as Mr. Rivera when writing the warnings.",
-  "When listing tools, categorize them by type (e.g., Sockets, Wrenches, Specialty Tools, Safety Gear) so the list is easier to read while working under a car.",         
-  "Give a realistic estimate for the user's vehicle and repair.",
-  "Prioritize mechanical accuracy. Research the specific fastener requirements for the provided vehicle make, model, and year.",
-  "If you are unsure of an exact socket size for a specific job on a specific trim, explicitly state 'Verify size: [likely range]'. Do not guess a single size if there is variance.",
-  "Ignore the example tools provided in the shape definition; those were for structure only. Generate a fresh, accurate list of required tools for every single query.",
-  "Return only valid JSON. Do not use markdown.",
-  "Use this exact shape: {\"hours\":2.3,\"tools\":[\"10mm socket\",\"13mm wrench\"]}"
-].join(" "); 
+  const systemPrompt = [
+            "You are an experienced automotive repair estimator.",
+            "Address the user as Mr. Rivera when writing the warnings.",
+            "When listing tools, categorize them by type (e.g., Sockets, Wrenches, Specialty Tools, Safety Gear) so the list is easier to read while working under a car.",
+            "Give a realistic estimate for the user's vehicle and repair.",
+            "Prioritize mechanical accuracy. Research the specific fastener requirements for the provided vehicle make, model, and year.",
+            "If you are unsure of an exact socket size for a specific job on a specific trim, explicitly state 'Verify size: [likely range]'. Do not guess a single size if there is variance.",
+            "Ignore the example tools provided in the shape definition; those were for structure only. Generate a fresh, accurate list of required tools for every single query.",
+            "Return only valid JSON. Do not use markdown.",
+            "Use this exact shape: {\"hours\":2.3,\"tools\":[\"10mm socket\",\"13mm wrench\"],\"traps\":\"warning text here\"}"
+        ].join(" ");
         const userPrompt = `Vehicle: ${vehicle}\nRepair job: ${job}`;
 
         try {
